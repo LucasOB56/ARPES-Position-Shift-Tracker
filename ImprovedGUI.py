@@ -554,14 +554,16 @@ while lock == False:
     if event == "-stop-":
         block = True
         start = True
-        exportcsv(indexes, alg2_x_pixel_offset, alg2_y_pixel_offset, time_images)
+        if len(indexes) > 0:
+            exportcsv(indexes, alg2_x_pixel_offset, alg2_y_pixel_offset, time_images)
         print('Stop')
 
     #if the window is closed, stops the program
     if event == sg.WIN_CLOSED:
         print("End")
         lock = True
-        exportcsv(indexes, alg2_x_pixel_offset, alg2_y_pixel_offset, time_images)
+        if len(indexes) > 0:
+            exportcsv(indexes, alg2_x_pixel_offset, alg2_y_pixel_offset, time_images)
     window.refresh()
 
 window.close()
