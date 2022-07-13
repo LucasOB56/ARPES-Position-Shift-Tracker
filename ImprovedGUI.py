@@ -556,6 +556,15 @@ while lock == False:
         start = True
         if len(indexes) > 0:
             exportcsv(indexes, alg2_x_pixel_offset, alg2_y_pixel_offset, time_images)
+            
+        #resets variables
+        reference_images = []
+        alg2_x_pixel_offset = []
+        alg2_y_pixel_offset = []
+        time_images = []
+        indexes = []
+        index = 0
+        
         print('Stop')
 
     #if the window is closed, stops the program
