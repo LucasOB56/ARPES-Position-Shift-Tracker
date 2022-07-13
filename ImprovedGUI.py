@@ -58,6 +58,8 @@ click1 = False
 click2 = False
 roiblock = True
 roimode = "set"
+start = True
+
 
 #default region of interest
 roi1 = (0,vidsize)
@@ -178,6 +180,8 @@ def exportcsv(indexes, alg2_x_pixel_offset, alg2_y_pixel_offset, time_images):
             row = list(row)
             writer.writerow(row)
             row_index = row_index + 1
+            
+creategraph(xaxismax, yaxismax_x, yaxismax_y, xtickfreq, ytickfreq)
 
 """
 Runs the program
