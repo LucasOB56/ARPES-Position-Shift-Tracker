@@ -556,6 +556,7 @@ while lock == False:
     if event == sg.WIN_CLOSED:
         print("End")
         lock = True
+        exportcsv(indexes, alg2_x_pixel_offset, alg2_y_pixel_offset, time_images)
     window.refresh()
 
 window.close()
