@@ -11,7 +11,8 @@ import numpy as np
 Variables for editing the code
 """
 testmode = True #if true, allows you to run the program without being attached to a camera
-vidsize = 575 #changes size of the live video screen in the gui
+vidsize = 780 #changes size of the live video screen in the gui
+graphsize = 350 #changes sizes of the graphs
 
 #recommended: don't change
 imxp = 0 #x-component of the position of the top-left corner of the image in the live video screen
@@ -107,8 +108,8 @@ tab1_layout = [
 #this one is for the graphs
 tab2_layout = [
     [sg.Text("Graphs of image shift (px) vs image number (right: x-displacement, left: y-displacement)")],
-    [sg.Graph(canvas_size = (500, 250), graph_bottom_left=(-20, -yaxismax_x-10), graph_top_right=(xaxismax+10, yaxismax_x+10), key = "-xgraph-", background_color="white", tooltip = "Graph of x-displacement", float_values = True)],
-    [sg.Graph(canvas_size = (500, 250), graph_bottom_left=(-20, -yaxismax_y-10), graph_top_right=(xaxismax+10, yaxismax_y+10), key = "-ygraph-", background_color="white", tooltip = "Graph of y-displacement", float_values = True)],
+    [sg.Graph(canvas_size = (2*graphsize, graphsize), graph_bottom_left=(-20, -yaxismax_x-10), graph_top_right=(xaxismax+10, yaxismax_x+10), key = "-xgraph-", background_color="white", tooltip = "Graph of x-displacement", float_values = True)],
+    [sg.Graph(canvas_size = (2*graphsize, graphsize), graph_bottom_left=(-20, -yaxismax_y-10), graph_top_right=(xaxismax+10, yaxismax_y+10), key = "-ygraph-", background_color="white", tooltip = "Graph of y-displacement", float_values = True)],
     [sg.Text("Graph dot size")],
     [sg.Slider(range = (0.1,2.5), default_value= 0.5, key = "-dotsize-", resolution = 0.1, orientation='h')]
 ]
