@@ -12,8 +12,8 @@ from time import sleep
 """
 Variables for editing the code
 """
-testmode = False  # if true, allows you to run the program without being attached to a camera
-scale = 1
+testmode = True  # if true, allows you to run the program without being attached to a camera
+scale = 0.5
 vidsize = round(780*scale)  # changes size of the live video screen in the gui
 graphsize = round(350*scale)  # changes sizes of the graphs
 randrange = 100 #range for random data created in testmode
@@ -55,6 +55,10 @@ alg2_x_pixel_offset = []  # the offset in the x-direction will be added to this 
 alg2_y_pixel_offset = []  # the offset in the y-direction will be added to this list
 time_images = []  # the time each image is captured will be added to this list
 indexes = []  # creates a list which indexes each frame
+xavgoffset = []
+yavgoffset = []
+xstdevs = []
+ystdevs =[]
 
 # variables used to control the GUI
 block = True
@@ -122,7 +126,7 @@ tab2_layout = [
               graph_top_right=(xaxismax + 10, yaxismax_y + 10), key="-ygraph-", background_color="white",
               tooltip="Graph of y-displacement", float_values=True)],
     [sg.Text("Graph dot size")],
-    [sg.Slider(range=(0.1, 2.5), default_value=0.5, key="-dotsize-", resolution=0.1, orientation='h')]
+    [sg.Slider(range=(0.1, 2.5), default_value=0.5, key="-dotsize-", resolution=0.1, orientation='h', size = (20, 15))]
 ]
 
 # this one is for live images
@@ -137,10 +141,24 @@ tab4_layout = [
               key='-roiimage-', background_color="black")],
 ]
 
+#this one is for stdev/avg graph
+tab5_layout = [
+    [sg.Text("Graphs of average image shift (px) vs image number (right: x-displacement, left: y-displacement)")],
+    [sg.Graph(canvas_size=(2 * graphsize, graphsize), graph_bottom_left=(-20, -yaxismax_x - 10),
+              graph_top_right=(xaxismax + 10, yaxismax_x + 10), key="-xgraphavg-", background_color="white",
+              tooltip="Graph of average x-displacement", float_values=True)],
+    [sg.Graph(canvas_size=(2 * graphsize, graphsize), graph_bottom_left=(-20, -yaxismax_y - 10),
+              graph_top_right=(xaxismax + 10, yaxismax_y + 10), key="-ygraphavg-", background_color="white",
+              tooltip="Graph of average y-displacement", float_values=True)],
+    [sg.Text("Graph dot size")],
+    [sg.Slider(range=(0.1, 2.5), default_value=0.5, key="-dotsizeavg-", resolution=0.1, orientation='h', size = (20, 15)), sg.Text("N = "), sg.Input("1", size = 4, key="-ninput-"), sg.Button("Take Average", key = "-avgbutton-"), sg.Text('', key = "-avgerrtext-")]
+]
+
 # this creates the elements which will be shown in the GUI window. Their key is how you call them within the code
 layout = [
     [sg.Text('Test Mode is on', visible = testmode)],
     [sg.TabGroup([[sg.Tab("Graph", tab2_layout, tooltip='Graph', key="-graphtab-")],
+                  [sg.Tab("Average Graph", tab5_layout, tooltip= 'Average Graph', key = "-avggraphtab-")],
                   [sg.Tab("Data", tab1_layout, tooltip='Data', key = "-datatab-")]]), sg.TabGroup(
         [[sg.Tab("Full View", layout=tab3_layout, tooltip="Full Image")],
          [sg.Tab("ROI View", layout=tab4_layout, tooltip="ROI")]])],
@@ -157,9 +175,13 @@ Functions which will be used in main part of code
 """
 
 
-def creategraph(xaxismax, yaxismax_x, yaxismax_y, xtickfreq, ytickfreq):
-    xgraph = window["-xgraph-"]
-    ygraph = window["-ygraph-"]
+def creategraph(xaxismax, yaxismax_x, yaxismax_y, xtickfreq, ytickfreq, avg = False):
+    if avg == False:
+        xgraph = window["-xgraph-"]
+        ygraph = window["-ygraph-"]
+    else:
+        xgraph = window["-xgraphavg-"]
+        ygraph = window["-ygraphavg-"]
 
     # creates axis for graphs
     xgraph.DrawLine((0, 0), (xaxismax, 0))
@@ -205,6 +227,8 @@ def exportcsv(indexes, alg2_x_pixel_offset, alg2_y_pixel_offset, time_images):
 
 
 creategraph(xaxismax, yaxismax_x, yaxismax_y, xtickfreq, ytickfreq)
+creategraph(xaxismax, yaxismax_x, yaxismax_y, xtickfreq, ytickfreq, avg = True)
+
 
 """
 Runs the program
@@ -390,6 +414,92 @@ while lock == False:
     if event == "-datatab-":
         graphtab = False
         datatab = True
+
+    if event == "-avggraphtab-":
+        graphtab = False
+        datatab = False
+
+    #plots graph of average when button is clicked
+    if event == "-avgbutton-" and block != True:
+        window["-xgraphavg-"].erase()
+        window["-ygraphavg-"].erase()
+        #resets lists
+        xstdevs = []
+        ystdevs = []
+        xavgoffset = []
+        yavgoffset = []
+        nstr = values["-ninput-"]
+        #resets error message
+        window["-avgerrtext-"].update('')
+
+        # gives an error if N is not a float
+        try:
+            N = int(nstr)
+            window["-ninput-"].update(nstr)
+        except ValueError:
+            print('Error: input not a non-zero integer')
+            window["-avgerrtext-"].update('Error: non-integer input')
+        else:
+            #gives error if N is zero
+            if N == 0:
+                print('Error: input is zero')
+                window["-avgerrtext-"].update('Error: input is zero')
+            else:
+                #gets dotsize from interface
+                dotsize = values["-dotsizeavg-"]
+
+                #splits the data into a list of separate lists of length N. If there are extra values, they are cut out
+                xoffsetsplit = [alg2_x_pixel_offset[x:x + N] for x in range(0, len(alg2_x_pixel_offset) - len(indexes) % N, N)]
+                yoffsetsplit = [alg2_y_pixel_offset[x:x + N] for x in range(0, len(alg2_y_pixel_offset) - len(indexes) % N, N)]
+
+                if xoffsetsplit == [] or yoffsetsplit == []:
+                    window["-avgerrtext-"].update('Error: given "N" value too large')
+                else:
+                    #gets the average and standard deviation of each chunk
+                    for i in range(0,len(xoffsetsplit)):
+                        xstdevs.append(np.std(xoffsetsplit[i]))
+                        ystdevs.append(np.std(yoffsetsplit[i]))
+                        xavgoffset.append(np.average(xoffsetsplit[i]))
+                        yavgoffset.append(np.average(yoffsetsplit[i]))
+
+                    xaxismax = N*len(xoffsetsplit)
+                    yaxismax_x = round(max(xavgoffset) + max(xstdevs))
+                    yaxismax_y = round(max(yavgoffset) + max(ystdevs))
+                    ytickfreq = int(round(max(yaxismax_x, yaxismax_y) / 5))
+                    # changes graph size to fit axes
+                    window["-xgraphavg-"].change_coordinates(graph_bottom_left=(-5, -yaxismax_x - 2),
+                                                          graph_top_right=(xaxismax + 2, yaxismax_x + 2))
+                    window["-ygraphavg-"].change_coordinates(graph_bottom_left=(-5, -yaxismax_y - 2),
+                                                          graph_top_right=(xaxismax + 2, yaxismax_y + 2))
+                    creategraph(xaxismax, yaxismax_x, yaxismax_y, xtickfreq=N, ytickfreq=ytickfreq, avg=True)
+
+
+                    for i in range(0, len(xoffsetsplit)):
+                        #draws the points on the graph
+                        window["-xgraphavg-"].draw_point((N * i, xavgoffset[i]), size = dotsize)
+                        window["-ygraphavg-"].draw_point((N * i, yavgoffset[i]), size = dotsize)
+                        #draws error bars
+                        #line on x-graph:
+                        window["-xgraphavg-"].draw_line((N * i, xavgoffset[i] - xstdevs[i]),
+                                                        (N * i, xavgoffset[i] + xstdevs[i]))
+                        #caps on x-graph:
+                        window["-xgraphavg-"].draw_line(((N * i) - (dotsize/2), xavgoffset[i] - xstdevs[i]),
+                                                        ((N * i) + (dotsize/2), xavgoffset[i] - xstdevs[i]))
+                        window["-xgraphavg-"].draw_line(
+                            ((N * i) - (dotsize/2), xavgoffset[i] + xstdevs[i]),
+                            ((N * i) + (dotsize/2), xavgoffset[i] + xstdevs[i]))
+
+                        # line on y-graph:
+                        window["-ygraphavg-"].draw_line((N * i, yavgoffset[i] - ystdevs[i]),
+                                                        (N * i, yavgoffset[i] + ystdevs[i]))
+                        # caps on y-graph:
+                        window["-ygraphavg-"].draw_line(
+                            ((N * i) - (dotsize/2), yavgoffset[i] - ystdevs[i]),
+                            ((N * i) + (dotsize/2), yavgoffset[i] - ystdevs[i]))
+                        window["-ygraphavg-"].draw_line(
+                            ((N * i) - (dotsize/2), yavgoffset[i] + ystdevs[i]),
+                            ((N * i) + (dotsize/2), yavgoffset[i] + ystdevs[i]))
+
 
     # activates if the "select ROI" button is clicked
     """
