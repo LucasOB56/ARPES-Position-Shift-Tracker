@@ -12,11 +12,11 @@ from time import sleep
 """
 Variables for editing the code
 """
-testmode = False  # if true, allows you to run the program without being attached to a camera
-scale = 1
+testmode = True  # if true, allows you to run the program without being attached to a camera
+scale = 0.5
 vidsize = round(780*scale)  # changes size of the live video screen in the gui
 graphsize = round(350*scale)  # changes sizes of the graphs
-randrange = 100 #range for random data created in testmode
+randrange = 1 #range for random data created in testmode
 
 # recommended: don't change
 imxp = 0  # x-component of the position of the top-left corner of the image in the live video screen
@@ -463,8 +463,8 @@ while lock == False:
                         yavgoffset.append(np.average(yoffsetsplit[i]))
 
                     xaxismax = N*len(xoffsetsplit)
-                    yaxismax_x = round(max(xavgoffset) + max(xstdevs))
-                    yaxismax_y = round(max(yavgoffset) + max(ystdevs))
+                    yaxismax_x = round(max(max(xavgoffset) + max(xstdevs), 5))
+                    yaxismax_y = round(max(max(yavgoffset) + max(ystdevs), 5))
                     ytickfreq = int(round(max(yaxismax_x, yaxismax_y) / 5))
                     # changes graph size to fit axes
                     window["-xgraphavg-"].change_coordinates(graph_bottom_left=(-5, -yaxismax_x - 2),
