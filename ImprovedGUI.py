@@ -12,8 +12,8 @@ from time import sleep
 """
 Variables for editing the code
 """
-testmode = True  # if true, allows you to run the program without being attached to a camera
-scale = 0.5
+testmode = False  # if true, allows you to run the program without being attached to a camera
+scale = 1
 vidsize = round(780*scale)  # changes size of the live video screen in the gui
 graphsize = round(350*scale)  # changes sizes of the graphs
 randrange = 100 #range for random data created in testmode
