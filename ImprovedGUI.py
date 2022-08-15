@@ -254,7 +254,12 @@ while lock == False:
 
     # waits for next camera frame if not in test mode
     if testmode == False:
-        nret = cam.wait_for_frame()  # this evaluates to "True" when there is a new frame
+        nret1 = cam.wait_for_frame()  # this evaluates to "True" when there is a new frame
+        if nret == False or True:
+            nret = nret1
+        else:
+            print("Error: failed to grab image")
+            nret = False
     else:
         #nret = False
         sleep(1)
