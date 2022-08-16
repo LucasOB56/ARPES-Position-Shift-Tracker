@@ -237,6 +237,12 @@ Runs the program
 while lock == False:
     # reads the GUI window for inputs
     event, values = window.read(timeout=1)
+    
+    #ensures camera is still connected
+    if len(uc480.list_instruments()) == 0 and testmode == False and index > 0:
+        exportcsv(indexes, alg2_x_pixel_offset, alg2_y_pixel_offset, time_images)
+        print("Error: no camera found")
+        exit(1)
 
     # Starts sample tracking by removing block if "start" is clicked
     if event == "-start-":
